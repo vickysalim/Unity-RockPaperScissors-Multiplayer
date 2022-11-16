@@ -765,11 +765,11 @@ PlayerSettings:
     m_VersionName: 
   apiCompatibilityLevel: 6
   activeInputHandler: 0
-  cloudProjectId: 
+  cloudProjectId: 88f8ca59-c7ff-48ff-a5e0-6a80affdf2d9
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: Rock Paper Scissor
+  organizationId: vick5724
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   playerDataPath: 

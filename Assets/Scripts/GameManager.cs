@@ -13,9 +13,13 @@ public class GameManager : MonoBehaviour, IOnEventCallback
     public Player P1;
     public Player P2;
 
-    public float maxHealth = 100;
-    public float restoreValue = 5;
-    public float damageValue = 10;
+    public PlayerStats defaultPlayerStats = new PlayerStats
+    {
+        MaxHealth = 100,
+        RestoreValue = 5,
+        DamageValue = 10
+    };
+
 
     public GameState State, NextState = GameState.NetPlayersInitialization;
 
@@ -29,6 +33,8 @@ public class GameManager : MonoBehaviour, IOnEventCallback
 
     [SerializeField] Player getLastPlayerWin;
     [SerializeField] int winStreak = 0;
+
+    public bool Online = true;
 
     public enum GameState
     {
@@ -44,19 +50,35 @@ public class GameManager : MonoBehaviour, IOnEventCallback
     void Start()
     {
         gameOverPanel.SetActive(false);
-        
-        PhotonNetwork.Instantiate(netPlayerPrefab.name, Vector3.zero, Quaternion.identity);
 
-        StartCoroutine(PingCoroutine());
+        if (Online)
+        {
+            PhotonNetwork.Instantiate(netPlayerPrefab.name, Vector3.zero, Quaternion.identity);
 
-        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.RestoreValue, out var restoreValue))
-        {
-            this.restoreValue = (float)restoreValue;
+            StartCoroutine(PingCoroutine());
+
+            State = GameState.NetPlayersInitialization;
+            NextState = GameState.NetPlayersInitialization;
+
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.RestoreValue, out var restoreValue))
+            {
+                defaultPlayerStats.RestoreValue = (float)restoreValue;
+            }
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.DamageValue, out var damageValue))
+            {
+                defaultPlayerStats.RestoreValue = (float)damageValue;
+            }
         }
-        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.DamageValue, out var damageValue))
+        else
         {
-            this.damageValue = (float)damageValue;
+            State = GameState.ChooseAttack;
         }
+
+        P1.SetStats(defaultPlayerStats, true);
+        P2.SetStats(defaultPlayerStats, true);
+
+        P1.IsReady = true;
+        P2.IsReady = true;
     }
 
     void Update()
@@ -136,8 +158,8 @@ public class GameManager : MonoBehaviour, IOnEventCallback
                             winStreak = 1;
                         }
 
-                        P1.ChangeHealth(-(damageValue * (1 * winStreak)));
-                        P2.ChangeHealth(restoreValue);
+                        P1.ChangeHealth(-(P2.stats.DamageValue * (1 * winStreak)));
+                        P2.ChangeHealth(P2.stats.RestoreValue);
 
                         getLastPlayerWin = P2;
                         
@@ -152,8 +174,9 @@ public class GameManager : MonoBehaviour, IOnEventCallback
                             winStreak = 1;
                         }
 
-                        P1.ChangeHealth(restoreValue);
-                        P2.ChangeHealth(-(damageValue * (1 * winStreak)));
+                        P1.ChangeHealth(P1.stats.RestoreValue);
+                        P2.ChangeHealth(-(P1.stats.DamageValue * (1 * winStreak)));
+
 
                         getLastPlayerWin = P1;
                     }
@@ -206,6 +229,12 @@ public class GameManager : MonoBehaviour, IOnEventCallback
 
     private void ChangeState(GameState newState)
     {
+        if (Online == false)
+        {
+            State = newState;
+            return;
+        }
+
         if (this.NextState == newState)
             return;
 
@@ -292,4 +321,5 @@ public class GameManager : MonoBehaviour, IOnEventCallback
             return null;
         }
     }
+
 }

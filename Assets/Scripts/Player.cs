@@ -23,10 +23,17 @@ public class Player : MonoBehaviour
     Color originalBarColor;
     [SerializeField] TMP_Text nameText;
     public TMP_Text Name { get => nameText; }
-    
+
+    public bool IsReady = false;
+
     public float Health;
-    public float MaxHealth;
-    
+    public PlayerStats stats = new PlayerStats
+    {
+        MaxHealth = 100,
+        RestoreValue = 5,
+        DamageValue = 10
+    };
+
     public AudioSource audioSource;
     public AudioClip damageClip;
     
@@ -36,14 +43,30 @@ public class Player : MonoBehaviour
 
     void Start()
     {
-        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.MaxHealth, out var maxHealth))
+        try
         {
-            this.MaxHealth = (float)maxHealth;
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PropertyNames.Room.MaxHealth, out var maxHealth))
+            {
+                stats.MaxHealth = (float)maxHealth;
+            }
+        } catch
+        {
+            
         }
-        Health = MaxHealth;
+
+        Health = stats.MaxHealth;
         healthText.text = Health.ToString();
 
         originalBarColor = nameBar.GetComponent<Image>().color;
+    }
+
+    public void SetStats(PlayerStats newStats, bool restoreFullHealth = true)
+    {
+        this.stats = newStats;
+        if (restoreFullHealth)
+            Health = stats.MaxHealth;
+
+        UpdateHealthBar();
     }
 
     public void Reset()
@@ -72,9 +95,14 @@ public class Player : MonoBehaviour
     public void ChangeHealth(float amount)
     {
         Health += amount;
-        Health = Mathf.Clamp(Health, 0, MaxHealth);
+        Health = Mathf.Clamp(Health, 0, stats.MaxHealth);
 
-        healthBar.UpdateBar(Health / MaxHealth);
+        UpdateHealthBar();
+    }
+
+    public void UpdateHealthBar()
+    {
+        healthBar.UpdateBar(Health / stats.MaxHealth);
 
         healthText.text = Health.ToString();
     }
